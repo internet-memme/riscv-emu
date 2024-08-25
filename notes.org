@@ -1,0 +1,13 @@
+#+title: risc-v emu notes
+
+* concepts
+** core
+a core contains an independent instruction fetch unit
+** accelerator
+a fixed non programmable function or a specialized core
+** harts
+- hardware threads
+- fetches instructions and executes them
+** XLEN
+width of an integer register
+** 
