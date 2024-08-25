@@ -58,8 +58,34 @@ fn exec_instr(core: &mut core, instr: u32) {
     match get_opcode(instr) {
         0b0110011 => exec_rtype(core, instr),
         0b1101111 => exec_jtype(core, instr),
+        0b1100111 => exec_itype(core, instr),
         _ => panic!{}
     }
+}
+
+fn exec_itype(core: &mut core, instr: u32) {
+    let rd = get_rd(instr);
+    let funct3 = get_funct3(instr);
+    let rs1 = get_rs1(instr);
+    let imm = get_imm_itype(instr);
+    match funct3 {
+        0b000 => jalr(core, rd, rs1, imm),
+        _ => panic!{}
+    }
+}
+
+fn jalr(core: &mut core, rd: u32, rs1: u32, mut imm: u32) {
+    if imm >> 12 == 1 {
+        imm += 0xfffff000;
+    }
+    let mut dest = imm + rs1;
+    dest = dest & 1;
+    core.next_pc = dest;
+    set_reg(core, rd, core.pc + 4);
+}
+
+fn get_imm_itype(instr: u32) -> u32 {
+    instr >> 20
 }
 
 
