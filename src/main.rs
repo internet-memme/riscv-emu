@@ -7,17 +7,20 @@ struct core{
 }
 
 fn main() {
-    let programm: Vec<u32> = vec![0b0000000_00010_00001_000_00011_0110011];
+    let programm: Vec<u32> = vec![0b0000000_00010_00011_000_00011_0110011,
+                                  0x_ffdff0ef];
+
     let mut core = core{
         regs: [0;32],
         pc: 0,
         next_pc: 0,
         memory: vec![0;1024]
     };
+    
     //set regs 1 and 2
+    core.regs[2] = 1;
+    core.regs[3] = 0;
     load_prog(&mut core, programm);
-    core.regs[1] = 1;
-    core.regs[2] = 2;
     run(&mut core)
 }
 
@@ -53,7 +56,8 @@ fn fetch_instruction(core: &mut core) -> u32 {
 
 fn exec_instr(core: &mut core, instr: u32) {
     match get_opcode(instr) {
-        0b0110011 => exec_rtype(core, instr), // r-type
+        0b0110011 => exec_rtype(core, instr),
+        0b1101111 => exec_jtype(core, instr),
         _ => panic!{}
     }
 }
@@ -85,6 +89,21 @@ fn get_rs2(instr: u32) -> u32 {
 
 fn get_funct7(instr: u32) -> u32 {
     (instr >> 25) & n_bits(7)
+}
+
+fn get_imm_jtype(instr: u32) -> u32 {
+    let mut imm_20 = (instr >> 31); //sign
+    if imm_20 == 1 {
+        imm_20 = 0xfff0_0000; //sign extension
+    }else{
+        imm_20 = 0;
+    }
+    
+    let imm_10_1 = (instr >> 21 & n_bits(10)) << 1;
+    let imm_11 = (instr >> 20 & n_bits(1)) << 11;
+    let imm_19_12 = (instr >> 12 & n_bits(8)) << 12;
+    
+    imm_20 + imm_10_1 + imm_11 + imm_19_12
 }
 
 fn exec_rtype(core: &mut core, instr: u32) {
@@ -120,8 +139,12 @@ fn exec_rtype(core: &mut core, instr: u32) {
     }
 }
 
-fn exec_jtype(core: core, instr: u32) {
+fn exec_jtype(core: &mut core, instr: u32) {
+    // currently we only have one jtype; maybe we need more later, then this needs to be fixed
     let rd = get_rd(instr);
+    let imm = get_imm_jtype(instr);
+    set_reg(core, rd, core.next_pc);
+    core.next_pc = core.pc.wrapping_add(imm);
 }
 
 fn get_reg(core: &core, reg: u32) -> u32 {
